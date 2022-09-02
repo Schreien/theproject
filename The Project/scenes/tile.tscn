@@ -1,0 +1,116 @@
+[gd_scene load_steps=2 format=2]
+
+[sub_resource type="GDScript" id=1]
+script/source = "extends Node2D
+#class_name tileClass
+
+onready var world = get_node(\"/root/world\")
+
+var mouseIn = false
+var selIdx = int(-1) #content selection idx
+var tileContents: Array 
+
+var travelType = null
+var relief 
+var vegetation = null
+
+var ownedBy 
+
+var coords := {\"r\" : int(), \"q\" : int(), \"s\" : int()}
+
+
+
+func init(tileType):
+	coords = coords
+	get_node(\"relief\").texture = load(global.tileTypes[tileType[\"climate\"]][tileType[\"relief\"]])
+	relief = tileType[\"relief\"]
+	
+#	if tileType[\"vegetation\"] == true:
+#		get_node(\"vegetation\").texture = load(\"res://images/forest.png\")
+#		print(\"veg added\")
+#
+	#FIX THIS 
+	if \"plain\" in relief:
+		relief = \"plain\"
+	#FIX THIS
+
+
+
+func _ready():
+	get_node(\"Area2D\").connect(\"mouse_entered\", self, \"mouse_state\", [true])
+	get_node(\"Area2D\").connect(\"mouse_exited\", self, \"mouse_state\", [false]) #unnecessary??
+	get_node(\"Area2D\").connect(\"input_event\", self, \"tile_input\")
+	#self.add_to_group(\"tiles\")
+
+
+
+func tile_input(_viewport, event, _shape_idx):
+	if event.is_action_pressed(\"mouse_select\") and mouseIn == true:
+		if world.assignMode == false:
+			if world.tileStack[\"tile\"] == null or world.tileStack[\"tile\"] == self:
+				if self.tileContents.size() != 0:
+					world.select_object(tileContents[world.tileStack[\"idx\"]]) 
+					if self.tileContents.size() -1 > world.tileStack[\"idx\"]:
+						world.tileStack[\"idx\"] += 1
+						world.tileStack[\"tile\"] = self
+					elif self.tileContents.size() -1 == world.tileStack[\"idx\"]:
+						world.tileStack[\"idx\"] = 0
+						world.tileStack[\"tile\"] = self
+			elif world.tileStack[\"tile\"] != self:
+				if self.tileContents.size() != 0:
+					world.tileStack[\"tile\"] = self
+					world.tileStack[\"idx\"] = 0
+					world.select_object(tileContents[world.tileStack[\"idx\"]])
+				elif self.tileContents.size() == 0:
+					world.tileStack[\"tile\"] = null
+					world.tileStack[\"idx\"] = 0
+					world.select_object(null)
+		elif world.assignMode == true:
+			world.selObject.assign(self)
+			pass
+		
+	elif event.is_action_pressed(\"right_mb\"):
+		print(\"rb is pressed\")
+		if world.selObject != null:
+			if world.selObject.TYPE == \"unit\":
+				world.selObject.move(self)
+			elif world.selObject.TYPE == \"structure\" and world.assignMode == true:
+				world.assign_mode(false)
+
+
+
+func mouse_state(state):
+	mouseIn = state
+
+
+
+func change_type(newType):
+	pass
+
+
+
+func place_structure(structure):
+	var struct = load(\"res://scenes/structure.tscn\").instance()
+	struct.init(structure, self, world)
+	self.tileContents.insert(0, struct)
+	self.add_child(struct)
+
+
+
+func remove_structure(sctructure):
+	pass
+"
+
+[node name="tile" type="Node2D"]
+script = SubResource( 1 )
+
+[node name="veg" type="Sprite" parent="."]
+z_index = 1
+
+[node name="relief" type="Sprite" parent="."]
+
+[node name="Area2D" type="Area2D" parent="."]
+monitorable = false
+
+[node name="CollisionPolygon2D" type="CollisionPolygon2D" parent="Area2D"]
+polygon = PoolVector2Array( 9, 14, 14, 0, 9, -13, -8, -13, -14, 0, -8, 14 )

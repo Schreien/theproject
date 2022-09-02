@@ -1,0 +1,28 @@
+[gd_scene load_steps=4 format=2]
+
+[sub_resource type="OpenSimplexNoise" id=1]
+seed = 5555553
+persistence = 0.182
+lacunarity = 4.0
+
+[sub_resource type="NoiseTexture" id=2]
+width = 1000
+height = 800
+noise = SubResource( 1 )
+
+[sub_resource type="GDScript" id=3]
+script/source = "extends Sprite
+
+var te = \"test1\"
+
+func _ready():
+	if \"test\" in te:
+		print(\"true\")
+	else:
+		print(\"false\")
+	
+"
+
+[node name="Sprite" type="Sprite"]
+texture = SubResource( 2 )
+script = SubResource( 3 )

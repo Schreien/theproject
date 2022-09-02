@@ -1,0 +1,89 @@
+[gd_scene load_steps=2 format=2]
+
+[sub_resource type="GDScript" id=1]
+script/source = "extends Node2D
+
+onready var world = get_node(\"/root/world\")
+var coords = {\"r\" : int(), \"q\" : int(), \"s\" : int()}
+
+const TYPE = \"unit\"
+var unitType 
+
+
+#var buttons = []
+var unitOwner = null
+
+var posHex 
+
+var baseParams = {}
+var curPoints = {
+	\"movement\" : null,
+	\"health\"  : null,
+	\"morale\" : null
+	}
+
+
+
+func init(unitType, hex):
+	get_node(\"Sprite\").texture = load(global.unitTypes[unitType][\"onMapImg\"])
+	baseParams = global.unitTypes[unitType][\"attr\"]
+	hex.tileContents.append(self)
+	self.scale = Vector2(1, 1)
+	self.coords = hex.coords
+	self.unitType = unitType
+	posHex = hex
+	
+	curPoints[\"movement\"] = baseParams[\"movement\"][\"points\"]
+
+
+
+func _ready():
+	pass 
+
+
+func move(tile):
+	var moveCost = baseParams[\"movement\"][\"costs\"][tile.relief]
+	if tile.coords != self.coords:
+		if global.is_in_range(posHex, tile, 1):
+			if moveCost > 0:
+				if moveCost <= curPoints[\"movement\"]:
+					self.position = tile.position
+					self.curPoints[\"movement\"] -= moveCost
+					self.coords = tile.coords
+					tile.tileContents.append(self)
+					world.select_object(self)
+					posHex.tileContents.erase(self)
+					posHex.selIdx = 0
+					posHex = tile
+				else:
+					print(\"Not enough MP.\")
+					return
+			elif moveCost < 0:
+				print(\"Unit cannot travel through this terrain.\")
+				return
+
+
+
+func end_turn():
+	curPoints[\"movement\"] = baseParams[\"movement\"][\"points\"]
+
+
+
+func settle():
+	posHex.place_structure(\"camp\")
+	#posHex.tileContents.erase(self)
+	#world.update_unit_info_panel(null)
+	#self.queue_free()
+	
+	
+	pass
+"
+
+[node name="unit" type="Node2D"]
+z_index = 100
+script = SubResource( 1 )
+
+[node name="Sprite" type="Sprite" parent="."]
+
+[node name="Area2D" type="Area2D" parent="."]
+monitorable = false
